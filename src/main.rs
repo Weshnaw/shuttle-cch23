@@ -1,6 +1,6 @@
-use axum::{http::StatusCode, response::IntoResponse, routing::get, Router};
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Router};
 use derive_more::{Display, Error};
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 async fn hello_world() -> Result<impl IntoResponse, ResponseError> {
     Ok("Hello, world!")
@@ -11,11 +11,25 @@ async fn error() -> ResponseError {
     ResponseError::ChallengeNeg1
 }
 
+async fn day_01_cube_bits(Path(x): Path<String>) -> Result<impl IntoResponse, ResponseError> {
+    info!(?x);
+
+    let sum = x
+        .split("/")
+        .map(|x| x.parse::<i32>().unwrap_or(0))
+        .fold(0, |acc, x| acc ^ x);
+
+    let result = sum.pow(3);
+
+    Ok(result.to_string())
+}
+
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
         .route("/", get(hello_world))
-        .route("/-1/error", get(error));
+        .route("/-1/error", get(error))
+        .route("/1/*x", get(day_01_cube_bits));
 
     Ok(router.into())
 }
