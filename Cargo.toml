@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.6.20"
+axum = { version = "0.6.20", features = ["json"] }
 derive_more = "0.99.17"
+serde = "1.0.193"
+serde_json = "1.0.108"
 shuttle-axum = "0.34.0"
 shuttle-runtime = "0.34.0"
 tokio = "1.28.2"
