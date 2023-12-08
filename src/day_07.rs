@@ -34,7 +34,7 @@ struct BakeOutput {
     pantry: Recipe,
 }
 
-pub async fn task_one(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_01(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
     let cookie = headers.get("Cookie").expect("failed to get cookie header");
     info!(?cookie);
     let recipe: Decode = serde_json::from_str(
@@ -52,7 +52,7 @@ pub async fn task_one(headers: HeaderMap) -> Result<impl IntoResponse, ResponseE
     }))
 }
 
-pub async fn task_two(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_02(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
     let cookie = headers.get("Cookie").expect("failed to get cookie header");
     debug!(?cookie);
     let base64 = &cookie.to_str().expect("failed to str cookie")["recipe=".len()..];
@@ -95,7 +95,7 @@ mod tests {
     use axum_test_helper::TestClient;
 
     #[tokio::test]
-    async fn test_task_one() {
+    async fn test_01() {
         let router = router();
         let client = TestClient::new(router);
         let res = client
@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_task_two() {
+    async fn test_02() {
         let router = router();
         let client = TestClient::new(router);
         let res = client

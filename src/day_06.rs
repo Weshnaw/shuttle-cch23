@@ -12,7 +12,7 @@ struct ElfCount {
     no_elf_shelfs: usize,
 }
 
-pub async fn both_tasks(body: String) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_00(body: String) -> Result<impl IntoResponse, ResponseError> {
     let elf = body.to_lowercase().matches("elf").count();
     let elf_shelfs = body.to_lowercase().matches("elf on a shelf").count();
     let no_elf_shelfs = body.to_lowercase().matches("shelf").count() - elf_shelfs;
@@ -45,7 +45,7 @@ mod tests {
         ElfCount { elf: 5, elf_shelfs: 1, no_elf_shelfs: 1}
     )]
     #[tokio::test]
-    async fn test_both_tasks(#[case] input: &str, #[case] expected: ElfCount) {
+    async fn test_00(#[case] input: &str, #[case] expected: ElfCount) {
         let router = router();
         let client = TestClient::new(router);
         let res = client.post("/6").body(input.to_string()).send().await;

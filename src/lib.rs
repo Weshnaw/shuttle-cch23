@@ -1,6 +1,6 @@
-pub mod day_four;
-pub mod day_neg_one;
-pub mod day_one;
-pub mod day_seven;
-pub mod day_six;
+pub mod day_00;
+pub mod day_01;
+pub mod day_04;
+pub mod day_06;
+pub mod day_07;
 pub mod router;

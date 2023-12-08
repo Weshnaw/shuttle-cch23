@@ -3,11 +3,11 @@ use tracing::debug;
 
 use crate::router::ResponseError;
 
-pub async fn task_one() -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_01() -> Result<impl IntoResponse, ResponseError> {
     Ok("Hello, world!")
 }
 
-pub async fn task_two() -> ResponseError {
+pub async fn task_02() -> ResponseError {
     debug!("ChallengeNeg1 Error always sent at this path");
     ResponseError::ChallengeNeg1
 }
@@ -19,7 +19,7 @@ mod tests {
     use axum_test_helper::TestClient;
 
     #[tokio::test]
-    async fn test_task_one() {
+    async fn test_01() {
         let router = router();
         let client = TestClient::new(router);
         let res = client.get("/").send().await;
@@ -27,7 +27,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_task_two() {
+    async fn test_02() {
         let router = router();
         let client = TestClient::new(router);
         let res = client.get("/-1/error").send().await;

@@ -64,7 +64,7 @@ impl From<Vec<Reindeer>> for Contest {
     }
 }
 
-pub async fn task_one(
+pub async fn task_01(
     extract::Json(payload): extract::Json<Vec<Reindeer>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     info!(?payload);
@@ -74,7 +74,7 @@ pub async fn task_one(
     Ok(result.to_string())
 }
 
-pub async fn task_two(
+pub async fn task_02(
     extract::Json(payload): extract::Json<Vec<Reindeer>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     info!(?payload);
@@ -91,7 +91,7 @@ mod tests {
     use axum_test_helper::TestClient;
 
     #[tokio::test]
-    async fn test_task_one() {
+    async fn test_01() {
         let router = router();
         let client = TestClient::new(router);
         let res = client
@@ -145,7 +145,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_task_two() {
+    async fn test_02() {
         let router = router();
         let client = TestClient::new(router);
         let res = client

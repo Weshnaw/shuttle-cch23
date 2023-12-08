@@ -7,18 +7,18 @@ use axum::{
 use derive_more::{Display, Error};
 use tracing::warn;
 
-use crate::{day_four, day_neg_one, day_one, day_seven, day_six};
+use crate::{day_00, day_01, day_04, day_06, day_07};
 
 pub fn router() -> Router {
     Router::new()
-        .route("/", get(day_neg_one::task_one))
-        .route("/-1/error", get(day_neg_one::task_two))
-        .route("/1/*x", get(day_one::both_tasks))
-        .route("/4/strength", post(day_four::task_one))
-        .route("/4/contest", post(day_four::task_two))
-        .route("/6", post(day_six::both_tasks))
-        .route("/7/decode", get(day_seven::task_one))
-        .route("/7/bake", get(day_seven::task_two))
+        .route("/", get(day_00::task_01))
+        .route("/-1/error", get(day_00::task_02))
+        .route("/1/*x", get(day_01::task_00))
+        .route("/4/strength", post(day_04::task_01))
+        .route("/4/contest", post(day_04::task_02))
+        .route("/6", post(day_06::task_00))
+        .route("/7/decode", get(day_07::task_01))
+        .route("/7/bake", get(day_07::task_02))
 }
 
 #[derive(Error, Display, Debug)]
