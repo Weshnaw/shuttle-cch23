@@ -31,7 +31,7 @@ async fn day_01_cube_bits(Path(x): Path<String>) -> Result<impl IntoResponse, Re
     Ok(result.to_string())
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Reindeer {
     name: String,
     #[serde(default)]
@@ -55,7 +55,7 @@ async fn day_04_strength(
     Ok(result.to_string())
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 struct Contest {
     fastest: String,
     tallest: String,
@@ -107,7 +107,7 @@ async fn day_04_contest(
     Ok(Json(result))
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 struct ElfCount {
     elf: usize,
     #[serde(rename = "elf on a shelf")]
@@ -127,7 +127,7 @@ async fn day_06_elf_count(body: String) -> Result<impl IntoResponse, ResponseErr
     }))
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 struct Decode {
     flour: u32,
     #[serde(rename = "chocolate chips")]
@@ -152,7 +152,7 @@ async fn day_07_decode(headers: HeaderMap) -> Result<impl IntoResponse, Response
     }))
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 struct Recipe {
     flour: u32,
     #[serde(rename = "chocolate chips")]
@@ -163,17 +163,18 @@ struct Recipe {
     baking: u32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 struct BakeInput {
     recipe: Recipe,
     pantry: Recipe,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 struct BakeOutput {
     cookies: u32,
     pantry: Recipe,
 }
+
 async fn day_07_bake(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
     let cookie = headers.get("Cookie").expect("failed to get cookie header");
     debug!(?cookie);
@@ -208,9 +209,8 @@ async fn day_07_bake(headers: HeaderMap) -> Result<impl IntoResponse, ResponseEr
     }))
 }
 
-#[shuttle_runtime::main]
-async fn main() -> shuttle_axum::ShuttleAxum {
-    let router = Router::new()
+fn router() -> Router {
+    Router::new()
         .route("/", get(hello_world))
         .route("/-1/error", get(error))
         .route("/1/*x", get(day_01_cube_bits))
@@ -218,9 +218,12 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/4/contest", post(day_04_contest))
         .route("/6", post(day_06_elf_count))
         .route("/7/decode", get(day_07_decode))
-        .route("/7/bake", get(day_07_bake));
+        .route("/7/bake", get(day_07_bake))
+}
 
-    Ok(router.into())
+#[shuttle_runtime::main]
+async fn main() -> shuttle_axum::ShuttleAxum {
+    Ok(router().into())
 }
 
 #[derive(Error, Display, Debug)]
@@ -241,5 +244,208 @@ impl IntoResponse for ResponseError {
             #[allow(unreachable_patterns)]
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "UNKOWN ERROR").into_response(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::StatusCode;
+    use axum_test_helper::TestClient;
+
+    #[tokio::test]
+    async fn test_day_neg_one_task_one() {
+        let router = router();
+        let client = TestClient::new(router);
+        let res = client.get("/").send().await;
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_day_neg_one_task_two() {
+        let router = router();
+        let client = TestClient::new(router);
+        let res = client.get("/-1/error").send().await;
+        assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[rstest::rstest]
+    #[case("4/8", "1728")]
+    #[case("10", "1000")]
+    #[case("4/5/8/10", "27")]
+    #[tokio::test]
+    async fn test_day_one(#[case] input: &str, #[case] expected: &str) {
+        let router = router();
+        let client = TestClient::new(router);
+        let res = client.get(&format!("/1/{}", input)).send().await;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.text().await, expected);
+    }
+
+    #[tokio::test]
+    async fn test_day_four_task_one() {
+        let router = router();
+        let client = TestClient::new(router);
+        let res = client
+            .post("/4/strength")
+            .json(&[
+                Reindeer {
+                    name: "Dasher".to_string(),
+                    strength: 5,
+                    speed: 0f32,
+                    height: 0,
+                    antler_width: 0,
+                    snow_magic_power: 0,
+                    favorite_food: "Unknown".to_string(),
+                    candies: 0,
+                },
+                Reindeer {
+                    name: "Dancer".to_string(),
+                    strength: 6,
+                    speed: 0f32,
+                    height: 0,
+                    antler_width: 0,
+                    snow_magic_power: 0,
+                    favorite_food: "Unknown".to_string(),
+                    candies: 0,
+                },
+                Reindeer {
+                    name: "Prancer".to_string(),
+                    strength: 4,
+                    speed: 0f32,
+                    height: 0,
+                    antler_width: 0,
+                    snow_magic_power: 0,
+                    favorite_food: "Unknown".to_string(),
+                    candies: 0,
+                },
+                Reindeer {
+                    name: "Vixen".to_string(),
+                    strength: 7,
+                    speed: 0f32,
+                    height: 0,
+                    antler_width: 0,
+                    snow_magic_power: 0,
+                    favorite_food: "Unknown".to_string(),
+                    candies: 0,
+                },
+            ])
+            .send()
+            .await;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.text().await, "22");
+    }
+
+    #[tokio::test]
+    async fn test_day_four_task_two() {
+        let router = router();
+        let client = TestClient::new(router);
+        let res = client
+            .post("/4/contest")
+            .json(&[
+                Reindeer {
+                    name: "Dasher".to_string(),
+                    strength: 5,
+                    speed: 50.4,
+                    height: 80,
+                    antler_width: 36,
+                    snow_magic_power: 9001,
+                    favorite_food: "hay".to_string(),
+                    candies: 2,
+                },
+                Reindeer {
+                    name: "Dancer".to_string(),
+                    strength: 6,
+                    speed: 48.2,
+                    height: 65,
+                    antler_width: 37,
+                    snow_magic_power: 4004,
+                    favorite_food: "grass".to_string(),
+                    candies: 6,
+                },
+            ])
+            .send()
+            .await;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(
+            res.json::<Contest>().await,
+            Contest {
+                fastest: "Speeding past the finish line with a strength of 5 is Dasher".to_string(),
+                tallest: "Dasher is standing tall with his 36 cm wide antlers".to_string(),
+                magician: "Dasher could blast you away with a snow magic power of 9001".to_string(),
+                consumer: "Dancer ate lots of candies, but also some grass".to_string()
+            }
+        );
+    }
+
+    #[rstest::rstest]
+    #[case(
+        "The mischievous elf peeked out from behind the toy workshop,
+         and another elf joined in the festive dance.
+         Look, there is also an elf on that shelf!",
+        ElfCount { elf: 4, elf_shelfs: 0, no_elf_shelfs: 1}
+    )]
+    #[case(
+        "there is an elf on a shelf on an elf.
+         there is also another shelf in Belfast.",
+        ElfCount { elf: 5, elf_shelfs: 1, no_elf_shelfs: 1}
+    )]
+    #[tokio::test]
+    async fn test_day_six(#[case] input: &str, #[case] expected: ElfCount) {
+        let router = router();
+        let client = TestClient::new(router);
+        let res = client.post("/6").body(input.to_string()).send().await;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.json::<ElfCount>().await, expected);
+    }
+
+    #[tokio::test]
+    async fn test_day_seven_task_one() {
+        let router = router();
+        let client = TestClient::new(router);
+        let res = client
+            .get("/7/decode")
+            .header(
+                "Cookie",
+                "recipe=eyJmbG91ciI6MTAwLCJjaG9jb2xhdGUgY2hpcHMiOjIwfQ==",
+            )
+            .send()
+            .await;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(
+            res.json::<Decode>().await,
+            Decode {
+                flour: 100,
+                choco: 20
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn test_day_seven_task_two() {
+        let router = router();
+        let client = TestClient::new(router);
+        let res = client
+            .get("/7/bake")
+            .header(
+                "Cookie",
+                "recipe=eyJyZWNpcGUiOnsiZmxvdXIiOjk1LCJzdWdhciI6NTAsImJ1dHRlciI6MzAsImJha2luZyBwb3dkZXIiOjEwLCJjaG9jb2xhdGUgY2hpcHMiOjUwfSwicGFudHJ5Ijp7ImZsb3VyIjozODUsInN1Z2FyIjo1MDcsImJ1dHRlciI6MjEyMiwiYmFraW5nIHBvd2RlciI6ODY1LCJjaG9jb2xhdGUgY2hpcHMiOjQ1N319",
+            )
+            .send()
+            .await;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(
+            res.json::<BakeOutput>().await,
+            BakeOutput {
+                cookies: 4,
+                pantry: Recipe {
+                    flour: 5,
+                    choco: 257,
+                    sugar: 307,
+                    butter: 2002,
+                    baking: 825
+                }
+            }
+        );
     }
 }

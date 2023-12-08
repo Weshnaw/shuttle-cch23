@@ -13,3 +13,7 @@ shuttle-axum = "0.34.0"
 shuttle-runtime = "0.34.0"
 tokio = "1.28.2"
 tracing = "0.1.40"
+
+[dev-dependencies]
+axum-test-helper = { version = "0.3.0", features = ["cookies"] }
+rstest = "0.18.2"
