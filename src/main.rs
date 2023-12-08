@@ -22,7 +22,7 @@ async fn day_01_cube_bits(Path(x): Path<String>) -> Result<impl IntoResponse, Re
     info!(?x);
 
     let sum = x
-        .split("/")
+        .split('/')
         .map(|x| x.parse::<i32>().unwrap_or(0))
         .fold(0, |acc, x| acc ^ x);
 
