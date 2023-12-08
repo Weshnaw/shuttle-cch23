@@ -1,6 +1,6 @@
 use axum::{
     extract::{self, Path},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
@@ -107,6 +107,107 @@ async fn day_04_contest(
     Ok(Json(result))
 }
 
+#[derive(Serialize, Debug)]
+struct ElfCount {
+    elf: usize,
+    #[serde(rename = "elf on a shelf")]
+    elf_shelfs: usize,
+    #[serde(rename = "shelf with no elf on it")]
+    no_elf_shelfs: usize,
+}
+
+async fn day_06_elf_count(body: String) -> Result<impl IntoResponse, ResponseError> {
+    let elf = body.to_lowercase().matches("elf").count();
+    let elf_shelfs = body.to_lowercase().matches("elf on a shelf").count();
+    let no_elf_shelfs = body.to_lowercase().matches("shelf").count() - elf_shelfs;
+    Ok(Json(ElfCount {
+        elf,
+        elf_shelfs,
+        no_elf_shelfs,
+    }))
+}
+
+#[derive(Serialize, Deserialize)]
+struct Decode {
+    flour: u32,
+    #[serde(rename = "chocolate chips")]
+    choco: u32,
+}
+
+async fn day_07_decode(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
+    let cookie = headers.get("Cookie").expect("failed to get cookie header");
+    info!(?cookie);
+    let recipe: Decode = serde_json::from_str(
+        &String::from_utf8(
+            rbase64::decode(&cookie.to_str().expect("failed to str cookie")["recipe=".len()..])
+                .expect("unable to decode cookie"),
+        )
+        .expect("unable to parse String"),
+    )
+    .expect("failed to parse json");
+
+    Ok(Json(Decode {
+        flour: recipe.flour,
+        choco: recipe.choco,
+    }))
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Recipe {
+    flour: u32,
+    #[serde(rename = "chocolate chips")]
+    choco: u32,
+    sugar: u32,
+    butter: u32,
+    #[serde(rename = "baking powder")]
+    baking: u32,
+}
+
+#[derive(Deserialize, Debug)]
+struct BakeInput {
+    recipe: Recipe,
+    pantry: Recipe,
+}
+
+#[derive(Serialize, Debug)]
+struct BakeOutput {
+    cookies: u32,
+    pantry: Recipe,
+}
+async fn day_07_bake(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
+    let cookie = headers.get("Cookie").expect("failed to get cookie header");
+    debug!(?cookie);
+    let base64 = &cookie.to_str().expect("failed to str cookie")["recipe=".len()..];
+    debug!(?base64);
+    let decoded = &String::from_utf8(rbase64::decode(base64).expect("unable to decode cookie"))
+        .expect("unable to parse String");
+    debug!(?decoded);
+    let recipe: BakeInput = serde_json::from_str(decoded).expect("failed to parse json");
+    info!(?decoded);
+
+    let max_cookies = *[
+        recipe.pantry.flour / recipe.recipe.flour,
+        recipe.pantry.choco / recipe.recipe.choco,
+        recipe.pantry.sugar / recipe.recipe.sugar,
+        recipe.pantry.butter / recipe.recipe.butter,
+        recipe.pantry.baking / recipe.recipe.baking,
+    ]
+    .iter()
+    .min()
+    .expect("min not found");
+
+    Ok(Json(BakeOutput {
+        cookies: max_cookies,
+        pantry: Recipe {
+            flour: recipe.pantry.flour - (recipe.recipe.flour * max_cookies),
+            choco: recipe.pantry.choco - (recipe.recipe.choco * max_cookies),
+            sugar: recipe.pantry.sugar - (recipe.recipe.sugar * max_cookies),
+            butter: recipe.pantry.butter - (recipe.recipe.butter * max_cookies),
+            baking: recipe.pantry.baking - (recipe.recipe.baking * max_cookies),
+        },
+    }))
+}
+
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
@@ -114,7 +215,10 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/-1/error", get(error))
         .route("/1/*x", get(day_01_cube_bits))
         .route("/4/strength", post(day_04_strength))
-        .route("/4/contest", post(day_04_contest));
+        .route("/4/contest", post(day_04_contest))
+        .route("/6", post(day_06_elf_count))
+        .route("/7/decode", get(day_07_decode))
+        .route("/7/bake", get(day_07_bake));
 
     Ok(router.into())
 }
