@@ -7,9 +7,18 @@ use axum::{
 use derive_more::{Display, Error};
 use tracing::warn;
 
-use crate::{day_00, day_01, day_04, day_06, day_07};
+use crate::{day_00, day_01, day_04, day_06, day_07, day_08};
+
+#[derive(Clone)]
+pub struct State {
+    pub client: reqwest::Client,
+}
 
 pub fn router() -> Router {
+    let state = State {
+        client: reqwest::Client::new(),
+    };
+
     Router::new()
         .route("/", get(day_00::task_01))
         .route("/-1/error", get(day_00::task_02))
@@ -19,6 +28,9 @@ pub fn router() -> Router {
         .route("/6", post(day_06::task_00))
         .route("/7/decode", get(day_07::task_01))
         .route("/7/bake", get(day_07::task_02))
+        .route("/8/weight/:number", get(day_08::task_01))
+        .route("/8/drop/:number", get(day_08::task_02))
+        .with_state(state)
 }
 
 #[derive(Error, Display, Debug)]
