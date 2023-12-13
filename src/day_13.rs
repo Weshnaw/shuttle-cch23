@@ -1,7 +1,7 @@
 use axum::{extract::State, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::router::{self, ResponseError};
 
@@ -90,15 +90,9 @@ pub struct Popular {
 pub async fn task_03_popular(
     State(state): State<router::State>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let popular = match sqlx::query!("SELECT gift_name FROM (SELECT gift_name, SUM(quantity) AS total FROM orders GROUP BY gift_name) AS q_one WHERE total = (SELECT MAX(total) FROM (SELECT gift_name, SUM(quantity) AS total FROM orders GROUP BY gift_name) AS q_two)")
+    let popular = sqlx::query!("SELECT gift_name FROM (SELECT gift_name, SUM(quantity) AS total FROM orders GROUP BY gift_name) AS q_one WHERE total = (SELECT MAX(total) FROM (SELECT gift_name, SUM(quantity) AS total FROM orders GROUP BY gift_name) AS q_two)")
         .fetch_one(&state.pool)
-        .await {
-            Ok(res) => res.gift_name,
-            Err(err) => {
-                warn!(?err);
-                None
-            },
-        };
+        .await.map(|r| r.gift_name).ok().flatten();
 
     info!(?popular);
 
