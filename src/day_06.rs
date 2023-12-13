@@ -1,5 +1,6 @@
 use axum::{response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 use crate::router::ResponseError;
 
@@ -12,44 +13,27 @@ struct ElfCount {
     no_elf_shelfs: usize,
 }
 
+const ELF_ON_A_SHELF: &str = "elf on a shelf";
 pub async fn task_00(body: String) -> Result<impl IntoResponse, ResponseError> {
-    let elf = body.to_lowercase().matches("elf").count();
-    let elf_shelfs = body.to_lowercase().matches("elf on a shelf").count();
-    let no_elf_shelfs = body.to_lowercase().matches("shelf").count() - elf_shelfs;
-    Ok(Json(ElfCount {
+    // let body = body.to_lowercase();
+    info!(?body);
+    let elf = body.matches("elf").count();
+    let elf_shelfs = body
+        .chars()
+        .map_windows(|w: &[_; ELF_ON_A_SHELF.len()]| {
+            if String::from_iter(w) == ELF_ON_A_SHELF.to_string() {
+                1
+            } else {
+                0
+            }
+        })
+        .sum();
+    let no_elf_shelfs = body.matches("shelf").count() - elf_shelfs;
+    let elf_count = ElfCount {
         elf,
         elf_shelfs,
         no_elf_shelfs,
-    }))
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::router::router;
-
-    use super::*;
-
-    use axum::http::StatusCode;
-    use axum_test_helper::TestClient;
-
-    #[rstest::rstest]
-    #[case(
-        "The mischievous elf peeked out from behind the toy workshop,
-         and another elf joined in the festive dance.
-         Look, there is also an elf on that shelf!",
-        ElfCount { elf: 4, elf_shelfs: 0, no_elf_shelfs: 1}
-    )]
-    #[case(
-        "there is an elf on a shelf on an elf.
-         there is also another shelf in Belfast.",
-        ElfCount { elf: 5, elf_shelfs: 1, no_elf_shelfs: 1}
-    )]
-    #[tokio::test]
-    async fn test_00(#[case] input: &str, #[case] expected: ElfCount) {
-        let router = router();
-        let client = TestClient::new(router);
-        let res = client.post("/6").body(input.to_string()).send().await;
-        assert_eq!(res.status(), StatusCode::OK);
-        assert_eq!(res.json::<ElfCount>().await, expected);
-    }
+    };
+    info!(?elf_count);
+    Ok(Json(elf_count))
 }

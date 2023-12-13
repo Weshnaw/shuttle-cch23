@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT gift_name FROM (SELECT gift_name, SUM(quantity) AS total FROM orders GROUP BY gift_name) AS q_one WHERE total = (SELECT MAX(total) FROM (SELECT gift_name, SUM(quantity) AS total FROM orders GROUP BY gift_name) AS q_two)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "gift_name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "f1b47e9fcf1b8dd89c4b42596169e819c187548a28d6754a80d286720be4a45e"
+}

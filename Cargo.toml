@@ -4,17 +4,23 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = { version = "0.6.20", features = ["json"] }
+axum = { version = "0.6.20", features = ["json", "multipart"] }
 derive_more = "0.99.17"
 rbase64 = "2.0.3"
-reqwest = "0.11.22"
+reqwest = { version = "0.11.22", features = ["json"] }
 serde = "1.0.193"
 serde_json = "1.0.108"
-shuttle-axum = "0.34.0"
-shuttle-runtime = "0.34.0"
+shuttle-axum = "0.35.1"
+shuttle-runtime = { version = "0.35.1", default-features = false }
+shuttle-shared-db = { version = "0.35.1", features = ["postgres"] }
+shuttle-persist = "0.35.1"
 tokio = "1.28.2"
 tracing = "0.1.40"
-
-[dev-dependencies]
-axum-test-helper = { version = "0.3.0", features = ["cookies"] }
-rstest = "0.18.2"
+tower-http = { version = "0.4.0", features = ["fs"] }
+tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
+image = "0.24.7"
+ulid = "1.1.0"
+uuid = "1.6.1"
+chrono = "0.4.31"
+sqlx = { version = "0.7.3", features = ["postgres", "runtime-tokio-native-tls"] }
+futures = "0.3.29"

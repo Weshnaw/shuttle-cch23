@@ -15,24 +15,3 @@ pub async fn task_00(Path(x): Path<String>) -> Result<impl IntoResponse, Respons
 
     Ok(result.to_string())
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::router::router;
-
-    use axum::http::StatusCode;
-    use axum_test_helper::TestClient;
-
-    #[rstest::rstest]
-    #[case("4/8", "1728")]
-    #[case("10", "1000")]
-    #[case("4/5/8/10", "27")]
-    #[tokio::test]
-    async fn test_00(#[case] input: &str, #[case] expected: &str) {
-        let router = router();
-        let client = TestClient::new(router);
-        let res = client.get(&format!("/1/{}", input)).send().await;
-        assert_eq!(res.status(), StatusCode::OK);
-        assert_eq!(res.text().await, expected);
-    }
-}

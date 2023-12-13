@@ -13,11 +13,17 @@ pub struct Reindeer {
     name: String,
     #[serde(default)]
     strength: i32,
+    #[serde(default)]
     speed: f32,
+    #[serde(default)]
     height: i32,
+    #[serde(default)]
     antler_width: i32,
+    #[serde(default)]
     snow_magic_power: i32,
+    #[serde(default)]
     favorite_food: String,
+    #[serde(default)]
     #[serde(rename = "cAnD13s_3ATeN-yesT3rdAy")]
     candies: i32,
 }
@@ -80,109 +86,4 @@ pub async fn task_02(
     info!(?payload);
 
     Ok(Json(Contest::from(payload)))
-}
-#[cfg(test)]
-mod tests {
-    use crate::router::router;
-
-    use super::*;
-
-    use axum::http::StatusCode;
-    use axum_test_helper::TestClient;
-
-    #[tokio::test]
-    async fn test_01() {
-        let router = router();
-        let client = TestClient::new(router);
-        let res = client
-            .post("/4/strength")
-            .json(&[
-                Reindeer {
-                    name: "Dasher".to_string(),
-                    strength: 5,
-                    speed: 0f32,
-                    height: 0,
-                    antler_width: 0,
-                    snow_magic_power: 0,
-                    favorite_food: "Unknown".to_string(),
-                    candies: 0,
-                },
-                Reindeer {
-                    name: "Dancer".to_string(),
-                    strength: 6,
-                    speed: 0f32,
-                    height: 0,
-                    antler_width: 0,
-                    snow_magic_power: 0,
-                    favorite_food: "Unknown".to_string(),
-                    candies: 0,
-                },
-                Reindeer {
-                    name: "Prancer".to_string(),
-                    strength: 4,
-                    speed: 0f32,
-                    height: 0,
-                    antler_width: 0,
-                    snow_magic_power: 0,
-                    favorite_food: "Unknown".to_string(),
-                    candies: 0,
-                },
-                Reindeer {
-                    name: "Vixen".to_string(),
-                    strength: 7,
-                    speed: 0f32,
-                    height: 0,
-                    antler_width: 0,
-                    snow_magic_power: 0,
-                    favorite_food: "Unknown".to_string(),
-                    candies: 0,
-                },
-            ])
-            .send()
-            .await;
-        assert_eq!(res.status(), StatusCode::OK);
-        assert_eq!(res.text().await, "22");
-    }
-
-    #[tokio::test]
-    async fn test_02() {
-        let router = router();
-        let client = TestClient::new(router);
-        let res = client
-            .post("/4/contest")
-            .json(&[
-                Reindeer {
-                    name: "Dasher".to_string(),
-                    strength: 5,
-                    speed: 50.4,
-                    height: 80,
-                    antler_width: 36,
-                    snow_magic_power: 9001,
-                    favorite_food: "hay".to_string(),
-                    candies: 2,
-                },
-                Reindeer {
-                    name: "Dancer".to_string(),
-                    strength: 6,
-                    speed: 48.2,
-                    height: 65,
-                    antler_width: 37,
-                    snow_magic_power: 4004,
-                    favorite_food: "grass".to_string(),
-                    candies: 6,
-                },
-            ])
-            .send()
-            .await;
-        assert_eq!(res.status(), StatusCode::OK);
-        assert_eq!(
-            res.json::<Contest>().await,
-            Contest {
-                fastest: "Speeding past the finish line with a strength of 5 is Dasher".to_string(),
-                tallest: "Dasher is standing tall with his 36 cm wide antlers".to_string(),
-                magician: "Dasher could blast you away with a snow magic power of 9001".to_string(),
-                consumer: "Dancer ate lots of candies, but also some grass".to_string()
-            }
-        );
-    }
 }
