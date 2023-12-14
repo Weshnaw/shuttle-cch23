@@ -75,8 +75,6 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
 
 #[derive(Error, Display, Debug, From)]
 pub enum ResponseError {
-    #[allow(dead_code)]
-    UnkownError(#[error(not(source))] String),
     ChallengeNeg1,
     SqlError(sqlx::Error),
     PersistError(PersistError),
@@ -100,12 +98,10 @@ impl IntoResponse for ResponseError {
     fn into_response(self) -> axum::response::Response {
         warn!("{:?} Error occured", self);
         match self {
-            Self::UnkownError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response(),
             Self::ChallengeNeg1 => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Challenge D-1 Task 2").into_response()
             }
-            #[allow(unreachable_patterns)]
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, "UNKOWN ERROR").into_response(),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, "UNKNOWN ERROR").into_response(),
         }
     }
 }
