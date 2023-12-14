@@ -6,11 +6,10 @@ use tracing::{debug, info};
 
 use crate::router::ResponseError;
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Default)]
+#[serde(default)]
 struct BakeInput {
-    #[serde(default)]
     recipe: HashMap<String, u64>,
-    #[serde(default)]
     pantry: HashMap<String, u64>,
 }
 

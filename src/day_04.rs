@@ -9,21 +9,15 @@ use tracing::info;
 use crate::router::ResponseError;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default, Clone)]
+#[serde(default)]
 pub struct Reindeer {
     name: String,
-    #[serde(default)]
     strength: i32,
-    #[serde(default)]
     speed: f32,
-    #[serde(default)]
     height: i32,
-    #[serde(default)]
     antler_width: i32,
-    #[serde(default)]
     snow_magic_power: i32,
-    #[serde(default)]
     favorite_food: String,
-    #[serde(default)]
     #[serde(rename = "cAnD13s_3ATeN-yesT3rdAy")]
     candies: i32,
 }
