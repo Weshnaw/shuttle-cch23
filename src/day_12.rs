@@ -19,8 +19,7 @@ pub async fn task_01_save(
 ) -> Result<impl IntoResponse, ResponseError> {
     state
         .persist
-        .save::<SystemTime>(&format!("day-12_{}", id), SystemTime::now())
-        .unwrap();
+        .save::<SystemTime>(&format!("day-12_{}", id), SystemTime::now())?;
     Ok(())
 }
 
@@ -33,7 +32,7 @@ pub async fn task_01_load(
         .load(&format!("day-12_{}", id))
         .unwrap_or(SystemTime::now());
 
-    let duration = SystemTime::now().duration_since(previous_time).unwrap();
+    let duration = SystemTime::now().duration_since(previous_time)?;
     Ok(duration.as_secs().to_string())
 }
 
@@ -42,7 +41,7 @@ pub async fn task_02(
 ) -> Result<impl IntoResponse, ResponseError> {
     let result = ulids
         .into_iter()
-        .map(|str| Ulid::from_string(&str).unwrap())
+        .filter_map(|str| Ulid::from_string(&str).ok())
         .map(|ulid| Uuid::from_u128(ulid.0))
         .rev()
         .collect::<Vec<Uuid>>();
@@ -68,8 +67,8 @@ pub async fn task_03(
 ) -> Result<impl IntoResponse, ResponseError> {
     let result = ulids
         .into_iter()
-        .map(|str| Ulid::from_string(&str).unwrap())
-        .collect::<Vec<_>>();
+        .filter_map(|str| Ulid::from_string(&str).ok())
+        .collect::<Vec<Ulid>>();
 
     let now = SystemTime::now();
 

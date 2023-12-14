@@ -8,7 +8,7 @@ use tracing::info;
 
 use crate::router::ResponseError;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Default, Clone)]
 pub struct Reindeer {
     name: String,
     #[serde(default)]
@@ -41,13 +41,23 @@ impl From<Vec<Reindeer>> for Contest {
         let fastest = value
             .iter()
             .max_by(|rein_x, rein_y| rein_x.speed.total_cmp(&rein_y.speed))
-            .unwrap();
-        let tallest = value.iter().max_by_key(|rein| rein.height).unwrap();
+            .cloned()
+            .unwrap_or_default();
+        let tallest = value
+            .iter()
+            .max_by_key(|rein| rein.height)
+            .cloned()
+            .unwrap_or_default();
         let magician = value
             .iter()
             .max_by_key(|rein| rein.snow_magic_power)
-            .unwrap();
-        let consumer = value.iter().max_by_key(|rein| rein.candies).unwrap();
+            .cloned()
+            .unwrap_or_default();
+        let consumer = value
+            .iter()
+            .max_by_key(|rein| rein.candies)
+            .cloned()
+            .unwrap_or_default();
 
         Contest {
             fastest: format!(

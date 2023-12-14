@@ -10,9 +10,8 @@ pub async fn task_01(
 ) -> Result<impl IntoResponse, ResponseError> {
     let sql = sqlx::query_scalar!("SELECT 20231213")
         .fetch_one(&state.pool)
-        .await
-        .unwrap()
-        .unwrap();
+        .await?
+        .unwrap_or(0);
 
     Ok(sql.to_string())
 }
@@ -23,11 +22,10 @@ pub async fn task_02_reset(
     let mut transaction = state.pool.begin().await.unwrap();
     sqlx::query!("DROP TABLE IF EXISTS orders")
         .execute(&mut *transaction)
-        .await
-        .unwrap();
-    sqlx::query!("CREATE TABLE orders (id INT PRIMARY KEY, region_id INT, gift_name VARCHAR(50), quantity INT)").execute(&mut *transaction).await.unwrap();
+        .await?;
+    sqlx::query!("CREATE TABLE orders (id INT PRIMARY KEY, region_id INT, gift_name VARCHAR(50), quantity INT)").execute(&mut *transaction).await?;
 
-    transaction.commit().await.unwrap();
+    transaction.commit().await?;
     Ok(())
 }
 
@@ -43,7 +41,7 @@ pub async fn task_02_orders(
     State(state): State<router::State>,
     Json(orders): Json<Vec<Order>>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let mut transaction = state.pool.begin().await.unwrap();
+    let mut transaction = state.pool.begin().await?;
 
     info!(?orders);
 
@@ -56,11 +54,10 @@ pub async fn task_02_orders(
             order.quantity
         )
         .execute(&mut *transaction)
-        .await
-        .unwrap();
+        .await?;
     }
 
-    transaction.commit().await.unwrap();
+    transaction.commit().await?;
     Ok(())
 }
 
@@ -74,9 +71,8 @@ pub async fn task_02_total(
 ) -> Result<impl IntoResponse, ResponseError> {
     let total = sqlx::query_scalar!("SELECT SUM(quantity) FROM orders")
         .fetch_one(&state.pool)
-        .await
-        .unwrap()
-        .unwrap();
+        .await?
+        .unwrap_or(0);
     info!(?total);
 
     Ok(Json(Total { total }))

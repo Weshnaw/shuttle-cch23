@@ -7,7 +7,7 @@ use tracing::debug;
 
 use crate::router::{self, ResponseError};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Pokemon {
     weight: i32,
 }
@@ -20,12 +20,11 @@ pub async fn task_01(
         .client
         .get(format!("https://pokeapi.co/api/v2/pokemon/{}", number))
         .send()
-        .await
-        .unwrap()
+        .await?
         .json()
-        .await
-        .unwrap();
-    debug!("poke");
+        .await?;
+
+    debug!(?poke);
     Ok((poke.weight as f32 / 10f32).to_string())
 }
 
@@ -39,11 +38,9 @@ pub async fn task_02(
         .client
         .get(format!("https://pokeapi.co/api/v2/pokemon/{}", number))
         .send()
-        .await
-        .unwrap()
+        .await?
         .json()
-        .await
-        .unwrap();
+        .await?;
 
     Ok((GRAV.sqrt() * (poke.weight as f32 / 10f32)).to_string())
 }

@@ -20,28 +20,34 @@ struct BakeOutput {
     pantry: HashMap<String, u64>,
 }
 
+const COOKIE_HEADER: &str = "Cookie";
+
 pub async fn task_01(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
-    let cookie = headers.get("Cookie").expect("failed to get cookie header");
+    let cookie = headers
+        .get(COOKIE_HEADER)
+        .ok_or(ResponseError::HeadingNotFound(COOKIE_HEADER.to_string()))?;
     info!(?cookie);
     let recipe = String::from_utf8(
         rbase64::decode(&cookie.to_str().expect("failed to str cookie")["recipe=".len()..])
-            .expect("unable to decode cookie"),
-    )
-    .expect("unable to parse String");
+            .map_err(|_| ResponseError::Base64DecodeError)?,
+    )?;
 
     info!(?recipe);
     Ok(recipe)
 }
 
 pub async fn task_02(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
-    let cookie = headers.get("Cookie").expect("failed to get cookie header");
+    let cookie = headers
+        .get(COOKIE_HEADER)
+        .ok_or(ResponseError::HeadingNotFound(COOKIE_HEADER.to_string()))?;
+
     debug!(?cookie);
-    let base64 = &cookie.to_str().expect("failed to str cookie")["recipe=".len()..];
+    let base64 = &cookie.to_str()?["recipe=".len()..];
     debug!(?base64);
-    let decoded = &String::from_utf8(rbase64::decode(base64).expect("unable to decode cookie"))
-        .expect("unable to parse String");
+    let decoded =
+        &String::from_utf8(rbase64::decode(base64).map_err(|_| ResponseError::Base64DecodeError)?)?;
     debug!(?decoded);
-    let recipe: BakeInput = serde_json::from_str(decoded).expect("failed to parse json");
+    let recipe: BakeInput = serde_json::from_str(decoded)?;
     info!(?decoded);
 
     let max_cookies = recipe

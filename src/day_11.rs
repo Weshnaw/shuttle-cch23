@@ -8,19 +8,17 @@ use crate::router::ResponseError;
 
 pub async fn task_02(mut multipart: Multipart) -> Result<impl IntoResponse, ResponseError> {
     let mut count = 0;
-    while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap().to_string();
-        let data = field.bytes().await.unwrap();
+    while let Some(field) = multipart.next_field().await? {
+        let name = field.name().unwrap_or("unknown").to_string();
+        let data = field.bytes().await?;
 
         info!("Length of `{}` is {} bytes", name, data.len());
 
         // I felt like specifically checking for image
         if name == "image" {
             let img = ImageReader::new(Cursor::new(data))
-                .with_guessed_format()
-                .expect("failed to guess format")
-                .decode()
-                .expect("failed to decode")
+                .with_guessed_format()?
+                .decode()?
                 .into_rgb16();
             // I also wanted to parse instances where multiple images are sent
             count += img

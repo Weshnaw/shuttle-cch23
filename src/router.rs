@@ -1,11 +1,16 @@
+use std::{string::FromUtf8Error, time::SystemTimeError};
+
 use axum::{
+    extract::multipart::MultipartError,
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     Router,
 };
-use derive_more::{Display, Error};
-use shuttle_persist::PersistInstance;
+use derive_more::{Display, Error, From};
+use image::ImageError;
+use reqwest::header::ToStrError;
+use shuttle_persist::{PersistError, PersistInstance};
 use sqlx::PgPool;
 use tower_http::services::ServeDir;
 use tracing::warn;
@@ -68,11 +73,26 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
         .with_state(state)
 }
 
-#[derive(Error, Display, Debug)]
+#[derive(Error, Display, Debug, From)]
 pub enum ResponseError {
     #[allow(dead_code)]
     UnkownError(#[error(not(source))] String),
     ChallengeNeg1,
+    SqlError(sqlx::Error),
+    PersistError(PersistError),
+    SystemTimeError(SystemTimeError),
+    MultiPartError(MultipartError),
+    ImageError(ImageError),
+    IoError(std::io::Error),
+    ReqwestError(reqwest::Error),
+    JsonError(serde_json::Error),
+    Utf8StringError(FromUtf8Error),
+    Base64DecodeError,
+    #[from(ignore)]
+    HeadingNotFound(#[error(not(source))] String),
+    #[from(ignore)]
+    MaxNotFound(#[error(not(source))] String),
+    ToStrError(ToStrError),
 }
 
 impl IntoResponse for ResponseError {

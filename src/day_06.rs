@@ -21,7 +21,7 @@ pub async fn task_00(body: String) -> Result<impl IntoResponse, ResponseError> {
     let elf_shelfs = body
         .chars()
         .map_windows(|w: &[_; ELF_ON_A_SHELF.len()]| {
-            if String::from_iter(w) == ELF_ON_A_SHELF.to_string() {
+            if String::from_iter(w) == *ELF_ON_A_SHELF {
                 1
             } else {
                 0
