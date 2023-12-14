@@ -87,7 +87,8 @@ pub enum ResponseError {
     ReqwestError(reqwest::Error),
     JsonError(serde_json::Error),
     Utf8StringError(FromUtf8Error),
-    Base64DecodeError,
+    #[from(ignore)]
+    Base64DecodeError(#[error(not(source))] String),
     #[from(ignore)]
     HeadingNotFound(#[error(not(source))] String),
     #[from(ignore)]

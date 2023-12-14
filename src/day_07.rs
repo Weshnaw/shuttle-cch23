@@ -21,15 +21,17 @@ struct BakeOutput {
 }
 
 const COOKIE_HEADER: &str = "Cookie";
+const RECIPE: usize = "recipe=".len();
 
 pub async fn task_01(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
     let cookie = headers
         .get(COOKIE_HEADER)
-        .ok_or(ResponseError::HeadingNotFound(COOKIE_HEADER.to_string()))?;
+        .ok_or(ResponseError::HeadingNotFound(COOKIE_HEADER.to_string()))?
+        .to_str()?;
     info!(?cookie);
     let recipe = String::from_utf8(
-        rbase64::decode(&cookie.to_str().expect("failed to str cookie")["recipe=".len()..])
-            .map_err(|_| ResponseError::Base64DecodeError)?,
+        rbase64::decode(&cookie[RECIPE..])
+            .map_err(|_| ResponseError::Base64DecodeError(cookie.to_string()))?,
     )?;
 
     info!(?recipe);
@@ -39,13 +41,15 @@ pub async fn task_01(headers: HeaderMap) -> Result<impl IntoResponse, ResponseEr
 pub async fn task_02(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
     let cookie = headers
         .get(COOKIE_HEADER)
-        .ok_or(ResponseError::HeadingNotFound(COOKIE_HEADER.to_string()))?;
-
+        .ok_or(ResponseError::HeadingNotFound(COOKIE_HEADER.to_string()))?
+        .to_str()?;
     debug!(?cookie);
-    let base64 = &cookie.to_str()?["recipe=".len()..];
+    let base64 = &cookie[RECIPE..];
     debug!(?base64);
-    let decoded =
-        &String::from_utf8(rbase64::decode(base64).map_err(|_| ResponseError::Base64DecodeError)?)?;
+    let decoded = &String::from_utf8(
+        rbase64::decode(base64)
+            .map_err(|_| ResponseError::Base64DecodeError(cookie.to_string()))?,
+    )?;
     debug!(?decoded);
     let recipe: BakeInput = serde_json::from_str(decoded)?;
     info!(?decoded);
