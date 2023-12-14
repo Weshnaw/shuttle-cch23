@@ -1,5 +1,8 @@
 set shell := ["nu", "-c"]
 
+start:
+  hx src/router.rs
+
 run: 
   cargo watch -x "shuttle run"
   
