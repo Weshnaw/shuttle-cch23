@@ -58,8 +58,8 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
         .route("/13/orders/popular", get(day_13::task_03_popular))
         .route("/14/unsafe", post(day_14::task_01))
         .route("/14/safe", post(day_14::task_02))
-        .route("/15/1", get(day_15::task_01))
-        .route("/15/2", get(day_15::task_02))
+        .route("/15/nice", post(day_15::task_01))
+        .route("/15/game", post(day_15::task_02))
         .route("/18/1", get(day_18::task_01))
         .route("/18/2", get(day_18::task_02))
         .route("/19/1", get(day_19::task_01))
@@ -92,6 +92,7 @@ pub enum ResponseError {
     #[from(ignore)]
     MaxNotFound(#[error(not(source))] String),
     ToStrError(ToStrError),
+    RegexError(regex::Error),
 }
 
 impl IntoResponse for ResponseError {

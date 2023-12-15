@@ -3,8 +3,11 @@ set shell := ["nu", "-c"]
 start:
   hx src/router.rs
 
-run: 
-  cargo watch -x "shuttle run"
+run:
+  cargo shuttle run
+
+watch: 
+  cargo watch -x "shuttle run" -d 5 -w 'src'
   
 deploy:
   cargo shuttle deploy
@@ -14,3 +17,6 @@ test day="--all":
   
 ngrok:
   ngrok http 8000
+  
+update:
+  cargo install cch23-validator

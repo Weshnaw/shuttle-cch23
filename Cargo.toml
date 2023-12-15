@@ -25,3 +25,5 @@ chrono = "0.4.31"
 sqlx = { version = "0.7.3", features = ["postgres", "runtime-tokio-native-tls"] }
 futures = "0.3.29"
 html-escape = "0.2.13"
+regex = "1.10.2"
+sha256 = "1.4.0"
