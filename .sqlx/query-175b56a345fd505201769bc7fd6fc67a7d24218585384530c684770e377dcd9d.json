@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO regions (\n                id, \n                name\n            ) VALUES (\n                $1, \n                $2\n            )",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "175b56a345fd505201769bc7fd6fc67a7d24218585384530c684770e377dcd9d"
+}

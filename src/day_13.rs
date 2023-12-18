@@ -31,10 +31,10 @@ pub async fn task_02_reset(
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Order {
-    id: i32,
-    region_id: i32,
-    gift_name: String,
-    quantity: i32,
+    pub id: i32,
+    pub region_id: i32,
+    pub gift_name: String,
+    pub quantity: i32,
 }
 
 pub async fn task_02_orders(

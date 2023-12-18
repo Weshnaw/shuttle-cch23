@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO orders (\n                id, \n                region_id, \n                gift_name, \n                quantity\n            ) VALUES (\n                $1, \n                $2, \n                $3, \n                $4\n            )",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Varchar",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2bc905f1394f5c41fc93ac039779f329677817f03bf21e1f5aba705fa8556bf8"
+}

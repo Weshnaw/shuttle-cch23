@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT r.name, o.total \n        FROM (\n            SELECT \n                region_id, \n                SUM(quantity) AS total \n            FROM orders \n            GROUP BY region_id\n        ) AS o \n        LEFT JOIN regions \n            AS r ON r.id = o.region_id \n        ORDER BY r.name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "total",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      null
+    ]
+  },
+  "hash": "22d05d7d1fc686d26302a33cf4f678c65e1660f060a59cef865a7b0b7b3574c6"
+}

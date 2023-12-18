@@ -20,3 +20,6 @@ ngrok:
   
 update:
   cargo install cch23-validator
+  
+sqlx:
+  cargo sqlx prepare

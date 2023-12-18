@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            r.name AS region,\n            ARRAY_REMOVE(ARRAY_AGG(o.gift_name), NULL) AS top_gifts\n        FROM (\n            SELECT \n                region_id, \n                gift_name,\n                total\n        \t\tFROM (\n                    SELECT \n                        region_id,\n                        gift_name,\n                        SUM(quantity) AS total,\n                        ROW_NUMBER() OVER (\n                            PARTITION BY region_id\n                            ORDER BY \n                                SUM(quantity) DESC, \n                                gift_name ASC\n                        ) AS r_num\n                    FROM orders\n                    GROUP BY \n                        region_id, \n                        gift_name\n                ) AS o\n            WHERE o.r_num <= $1\n        ) AS o\n        RIGHT JOIN regions AS r \n            ON r.id = o.region_id\n        GROUP BY r.name\n        ORDER BY r.name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "region",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "top_gifts",
+        "type_info": "VarcharArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      null
+    ]
+  },
+  "hash": "4b8f1c9feb78538320a9cae344efc79bea34d50d9533cc47d6f81fc040e498fa"
+}
