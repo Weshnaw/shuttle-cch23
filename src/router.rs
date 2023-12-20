@@ -1,4 +1,4 @@
-use std::{string::FromUtf8Error, time::SystemTimeError};
+use std::{collections::HashMap, string::FromUtf8Error, sync::Arc, time::SystemTimeError};
 
 use axum::{
     extract::multipart::MultipartError,
@@ -10,8 +10,10 @@ use axum::{
 use derive_more::{Display, Error, From};
 use image::ImageError;
 use reqwest::header::ToStrError;
+use serde::{Deserialize, Serialize};
 use shuttle_persist::{PersistError, PersistInstance};
 use sqlx::PgPool;
+use tokio::sync::{broadcast::Sender, RwLock};
 use tower_http::services::ServeDir;
 use tracing::warn;
 
@@ -20,11 +22,19 @@ use crate::{
     day_19, day_20, day_21, day_22,
 };
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Chat {
+    pub user: Option<String>,
+    pub message: String,
+}
+
 #[derive(Clone)]
 pub struct State {
     pub client: reqwest::Client,
     pub persist: PersistInstance,
     pub pool: PgPool,
+    pub views: Arc<RwLock<usize>>,
+    pub rooms: Arc<RwLock<HashMap<usize, Arc<Sender<Chat>>>>>,
 }
 
 pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
@@ -32,6 +42,8 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
         client: reqwest::Client::new(),
         persist,
         pool,
+        views: Arc::new(RwLock::new(0)),
+        rooms: Arc::new(RwLock::new(HashMap::new())),
     };
 
     Router::new()
@@ -65,8 +77,10 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
         .route("/18/regions", post(day_18::task_01_regions))
         .route("/18/regions/total", get(day_18::task_01_total))
         .route("/18/regions/top_list/:number", get(day_18::task_02))
-        .route("/19/1", get(day_19::task_01))
-        .route("/19/2", get(day_19::task_02))
+        .route("/19/ws/ping", get(day_19::task_01))
+        .route("/19/reset", post(day_19::task_02_reset))
+        .route("/19/views", get(day_19::task_02_views))
+        .route("/19/ws/room/:number/user/:name", get(day_19::task_02_room))
         .route("/20/1", get(day_20::task_01))
         .route("/20/2", get(day_20::task_02))
         .route("/21/1", get(day_21::task_01))
