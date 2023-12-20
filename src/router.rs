@@ -2,12 +2,13 @@ use std::{collections::HashMap, string::FromUtf8Error, sync::Arc, time::SystemTi
 
 use axum::{
     extract::multipart::MultipartError,
-    http::StatusCode,
+    http::{header::ToStrError as AxumToStrError, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Router,
 };
 use derive_more::{Display, Error, From};
+use gix::{discover, revision::spec::parse};
 use image::ImageError;
 use reqwest::header::ToStrError;
 use serde::{Deserialize, Serialize};
@@ -81,8 +82,9 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
         .route("/19/reset", post(day_19::task_02_reset))
         .route("/19/views", get(day_19::task_02_views))
         .route("/19/ws/room/:number/user/:name", get(day_19::task_02_room))
-        .route("/20/1", get(day_20::task_01))
-        .route("/20/2", get(day_20::task_02))
+        .route("/20/archive_files", post(day_20::task_01_files))
+        .route("/20/archive_files_size", post(day_20::task_01_size))
+        .route("/20/cookie", post(day_20::task_02))
         .route("/21/1", get(day_21::task_01))
         .route("/21/2", get(day_21::task_02))
         .route("/22/1", get(day_22::task_01))
@@ -110,6 +112,13 @@ pub enum ResponseError {
     MaxNotFound(#[error(not(source))] String),
     ToStrError(ToStrError),
     RegexError(regex::Error),
+    AxumToStrError(AxumToStrError),
+    BadRepository,
+    GitDiscoverError(discover::Error),
+    GitSingleParseError(parse::single::Error),
+    GitFindError(gix::object::find::existing::Error),
+    GitTryIntoError(gix::object::try_into::Error),
+    GitWalkError(gix::revision::walk::Error),
 }
 
 impl IntoResponse for ResponseError {
