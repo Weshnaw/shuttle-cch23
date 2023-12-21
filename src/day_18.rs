@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
@@ -13,7 +15,7 @@ use crate::{
 };
 
 pub async fn task_01_reset(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let mut transaction = state.pool.begin().await.unwrap();
 
@@ -34,7 +36,7 @@ pub async fn task_01_reset(
 }
 
 pub async fn task_01_orders(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
     Json(orders): Json<Vec<Order>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let mut transaction = state.pool.begin().await?;
@@ -75,7 +77,7 @@ pub struct Region {
 }
 
 pub async fn task_01_regions(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
     Json(regions): Json<Vec<Region>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let mut transaction = state.pool.begin().await?;
@@ -111,7 +113,7 @@ pub struct RegionResult {
 }
 
 pub async fn task_01_total(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let total = sqlx::query_as!(
         RegionResult,
@@ -149,7 +151,7 @@ pub struct TopResponse {
 
 pub async fn task_02(
     Path(number): Path<i64>,
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let total = sqlx::query_as!(
         TopResponse,

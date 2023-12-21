@@ -51,7 +51,7 @@ pub async fn task_01(ws: WebSocketUpgrade) -> Result<impl IntoResponse, Response
 }
 
 pub async fn task_02_reset(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let mut views = state.views.write().await;
     *views = 0;
@@ -59,7 +59,7 @@ pub async fn task_02_reset(
 }
 
 pub async fn task_02_views(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let views = state.views.read().await;
     info!(?views);
@@ -128,7 +128,7 @@ async fn read(mut reciever: SplitStream<WebSocket>, tx: Arc<Sender<Chat>>, name:
 
 pub async fn task_02_room(
     Path((number, name)): Path<(usize, String)>,
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
     ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, ResponseError> {
     debug!(?name);
@@ -141,5 +141,5 @@ pub async fn task_02_room(
         rooms.get(&number).unwrap().clone()
     };
     drop(rooms);
-    Ok(ws.on_upgrade(|ws| task_02_handler(ws, room, name, state.views)))
+    Ok(ws.on_upgrade(move |ws| task_02_handler(ws, room, name, state.views.clone())))
 }

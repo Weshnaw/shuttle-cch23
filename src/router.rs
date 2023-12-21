@@ -1,4 +1,7 @@
-use std::{collections::HashMap, string::FromUtf8Error, sync::Arc, time::SystemTimeError};
+use std::{
+    collections::HashMap, num::ParseIntError, string::FromUtf8Error, sync::Arc,
+    time::SystemTimeError,
+};
 
 use axum::{
     extract::multipart::MultipartError,
@@ -7,9 +10,11 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use country_boundaries::{CountryBoundaries, BOUNDARIES_ODBL_360X180};
 use derive_more::{Display, Error, From};
 use gix::{discover, revision::spec::parse};
 use image::ImageError;
+use isocountry::CountryCodeParseErr;
 use reqwest::header::ToStrError;
 use serde::{Deserialize, Serialize};
 use shuttle_persist::{PersistError, PersistInstance};
@@ -19,8 +24,8 @@ use tower_http::services::ServeDir;
 use tracing::warn;
 
 use crate::{
-    day_00, day_01, day_04, day_06, day_07, day_08, day_11, day_12, day_13, day_14, day_15, day_18,
-    day_19, day_20, day_21, day_22,
+    day_00, day_01, day_04, day_05, day_06, day_07, day_08, day_11, day_12, day_13, day_14, day_15,
+    day_18, day_19, day_20, day_21, day_22,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -29,23 +34,24 @@ pub struct Chat {
     pub message: String,
 }
 
-#[derive(Clone)]
 pub struct State {
     pub client: reqwest::Client,
     pub persist: PersistInstance,
     pub pool: PgPool,
     pub views: Arc<RwLock<usize>>,
     pub rooms: Arc<RwLock<HashMap<usize, Arc<Sender<Chat>>>>>,
+    pub boundaries: CountryBoundaries,
 }
 
 pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
-    let state = State {
+    let state = Arc::new(State {
         client: reqwest::Client::new(),
         persist,
         pool,
         views: Arc::new(RwLock::new(0)),
         rooms: Arc::new(RwLock::new(HashMap::new())),
-    };
+        boundaries: CountryBoundaries::from_reader(BOUNDARIES_ODBL_360X180).unwrap(),
+    });
 
     Router::new()
         .route("/", get(day_00::task_01))
@@ -85,10 +91,11 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
         .route("/20/archive_files", post(day_20::task_01_files))
         .route("/20/archive_files_size", post(day_20::task_01_size))
         .route("/20/cookie", post(day_20::task_02))
-        .route("/21/1", get(day_21::task_01))
-        .route("/21/2", get(day_21::task_02))
+        .route("/21/coords/:binary", get(day_21::task_01))
+        .route("/21/country/:binary", get(day_21::task_02))
         .route("/22/1", get(day_22::task_01))
         .route("/22/2", get(day_22::task_02))
+        .route("/5", post(day_05::task_00))
         .with_state(state)
 }
 
@@ -114,11 +121,15 @@ pub enum ResponseError {
     RegexError(regex::Error),
     AxumToStrError(AxumToStrError),
     BadRepository,
+    CountryNotFound,
     GitDiscoverError(discover::Error),
     GitSingleParseError(parse::single::Error),
     GitFindError(gix::object::find::existing::Error),
     GitTryIntoError(gix::object::try_into::Error),
     GitWalkError(gix::revision::walk::Error),
+    ParseIntError(ParseIntError),
+    BoundariesError(country_boundaries::Error),
+    CountryCodeError(CountryCodeParseErr),
 }
 
 impl IntoResponse for ResponseError {

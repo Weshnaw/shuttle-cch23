@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use std::{sync::Arc, time::SystemTime};
 
 use axum::{
     extract::{self, Path, State},
@@ -15,7 +15,7 @@ use crate::router::{self, ResponseError};
 
 pub async fn task_01_save(
     Path(id): Path<String>,
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     state
         .persist
@@ -25,7 +25,7 @@ pub async fn task_01_save(
 
 pub async fn task_01_load(
     Path(id): Path<String>,
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let previous_time = state
         .persist

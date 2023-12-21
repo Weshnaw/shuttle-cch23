@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
@@ -14,7 +16,7 @@ struct Pokemon {
 
 pub async fn task_01(
     Path(number): Path<i32>,
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let poke: Pokemon = state
         .client
@@ -32,7 +34,7 @@ const GRAV: f32 = 2f32 * 9.825 * 10f32;
 
 pub async fn task_02(
     Path(number): Path<i32>,
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let poke: Pokemon = state
         .client

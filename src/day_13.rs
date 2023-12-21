@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{extract::State, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -6,7 +8,7 @@ use tracing::info;
 use crate::router::{self, ResponseError};
 
 pub async fn task_01(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let sql = sqlx::query_scalar!("SELECT 20231213")
         .fetch_one(&state.pool)
@@ -17,7 +19,7 @@ pub async fn task_01(
 }
 
 pub async fn task_02_reset(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let mut transaction = state.pool.begin().await.unwrap();
     sqlx::query!("DROP TABLE IF EXISTS orders")
@@ -38,7 +40,7 @@ pub struct Order {
 }
 
 pub async fn task_02_orders(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
     Json(orders): Json<Vec<Order>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let mut transaction = state.pool.begin().await?;
@@ -67,7 +69,7 @@ pub struct Total {
 }
 
 pub async fn task_02_total(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let total = sqlx::query_scalar!("SELECT SUM(quantity) FROM orders")
         .fetch_one(&state.pool)
@@ -84,7 +86,7 @@ pub struct Popular {
 }
 
 pub async fn task_03_popular(
-    State(state): State<router::State>,
+    State(state): State<Arc<router::State>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let popular = sqlx::query!("SELECT gift_name FROM (SELECT gift_name, SUM(quantity) AS total FROM orders GROUP BY gift_name) AS q_one WHERE total = (SELECT MAX(total) FROM (SELECT gift_name, SUM(quantity) AS total FROM orders GROUP BY gift_name) AS q_two)")
         .fetch_one(&state.pool)
