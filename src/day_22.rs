@@ -106,12 +106,10 @@ pub async fn task_02(body: String) -> Result<impl IntoResponse, ResponseError> {
     let distance: f32 = traveled
         .into_iter()
         .map_windows(|&[a, b]| {
-            (&stars[a])
-                .iter()
-                .zip(&stars[b])
-                .map(|(a, b)| (a - b).pow(2) as f32)
-                .sum::<f32>()
-                .sqrt()
+            let a = &stars[a];
+            let b = &stars[b];
+
+            (((b[0] - a[0]).pow(2) + (b[1] - a[1]).pow(2) + (b[2] - a[2]).pow(2)) as f32).sqrt()
         })
         .sum();
 
