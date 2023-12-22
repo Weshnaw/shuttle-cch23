@@ -59,6 +59,7 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
         .route("/1/*x", get(day_01::task_00))
         .route("/4/strength", post(day_04::task_01))
         .route("/4/contest", post(day_04::task_02))
+        .route("/5", post(day_05::task_00))
         .route("/6", post(day_06::task_00))
         .route("/7/decode", get(day_07::task_01))
         .route("/7/bake", get(day_07::task_02))
@@ -93,9 +94,8 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
         .route("/20/cookie", post(day_20::task_02))
         .route("/21/coords/:binary", get(day_21::task_01))
         .route("/21/country/:binary", get(day_21::task_02))
-        .route("/22/1", get(day_22::task_01))
-        .route("/22/2", get(day_22::task_02))
-        .route("/5", post(day_05::task_00))
+        .route("/22/integers", post(day_22::task_01))
+        .route("/22/rocket", post(day_22::task_02))
         .with_state(state)
 }
 
@@ -130,6 +130,7 @@ pub enum ResponseError {
     ParseIntError(ParseIntError),
     BoundariesError(country_boundaries::Error),
     CountryCodeError(CountryCodeParseErr),
+    UnableToPortal,
 }
 
 impl IntoResponse for ResponseError {

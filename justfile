@@ -23,3 +23,9 @@ update:
   
 sqlx:
   cargo sqlx prepare
+  
+check:
+  cargo clippy
+  
+fix:
+  cargo clippy --fix --allow-dirty

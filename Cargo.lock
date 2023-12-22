@@ -422,6 +422,7 @@ dependencies = [
  "html-escape",
  "image",
  "isocountry",
+ "itertools 0.12.0",
  "rbase64",
  "regex",
  "reqwest",
