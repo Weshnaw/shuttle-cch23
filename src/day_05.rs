@@ -1,7 +1,7 @@
 use axum::{extract::Query, response::IntoResponse, Json};
 use serde::Deserialize;
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
 #[derive(Deserialize, Debug)]
 pub struct Pagination {
@@ -12,7 +12,7 @@ pub struct Pagination {
 pub async fn task_00(
     pagination: Query<Pagination>,
     Json(payload): Json<Vec<String>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     let size = payload.len();
     let result = payload
         .into_iter()

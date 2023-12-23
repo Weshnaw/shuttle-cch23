@@ -1,21 +1,26 @@
 use std::fs::remove_dir_all;
 
+use anyhow::Context;
 use axum::{body::Bytes, response::IntoResponse};
 use gix::traverse::tree;
 use tar::Archive;
 use tracing::{debug, info};
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
-pub async fn task_01_files(data: Bytes) -> Result<impl IntoResponse, ResponseError> {
-    let result = Archive::new(data.as_ref()).entries()?.count();
+pub async fn task_01_files(data: Bytes) -> Result<impl IntoResponse, Error> {
+    let result = Archive::new(data.as_ref())
+        .entries()
+        .context("Failed to decrompress bytes")?
+        .count();
     info!(?result);
     Ok(result.to_string())
 }
 
-pub async fn task_01_size(data: Bytes) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_01_size(data: Bytes) -> Result<impl IntoResponse, Error> {
     let result = Archive::new(data.as_ref())
-        .entries()?
+        .entries()
+        .context("Failed to decrompress bytes")?
         .map(|file| file.unwrap().header().size().unwrap_or_default())
         .sum::<u64>();
     info!(?result);
@@ -23,22 +28,28 @@ pub async fn task_01_size(data: Bytes) -> Result<impl IntoResponse, ResponseErro
 }
 
 const TEMP_DIR: &str = "tmp";
-pub async fn task_02(data: Bytes) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_02(data: Bytes) -> Result<impl IntoResponse, Error> {
     let _ = remove_dir_all(TEMP_DIR);
     let mut archive = Archive::new(data.as_ref());
-    archive.unpack(TEMP_DIR)?;
+    archive
+        .unpack(TEMP_DIR)
+        .context("Failed to decrompress bytes")?;
     info!("archive unpacked");
-    let repo = gix::discover(TEMP_DIR)?;
+    let repo = gix::discover(TEMP_DIR).context("Failed to find repo")?;
 
     let commit = repo
-        .rev_parse_single("christmas")?
-        .object()?
-        .try_into_commit()?;
+        .rev_parse_single("christmas")
+        .context("Failed to rev_parse_single")?
+        .object()
+        .context("Failed to get objects")?
+        .try_into_commit()
+        .context("Failed to get commit")?;
 
     let result = repo
         .rev_walk([commit.id])
         .sorting(gix::traverse::commit::Sorting::ByCommitTimeNewestFirst)
-        .all()?
+        .all()
+        .context("Failed to rev_walk")?
         .find_map(|commit| {
             let commit = commit.as_ref().unwrap().object().unwrap();
             let author = commit.author().unwrap().name;
@@ -69,6 +80,6 @@ pub async fn task_02(data: Bytes) -> Result<impl IntoResponse, ResponseError> {
         })
         .unwrap_or_default();
 
-    remove_dir_all(TEMP_DIR)?;
+    remove_dir_all(TEMP_DIR).context("Failed to remove directory")?;
     Ok(result)
 }

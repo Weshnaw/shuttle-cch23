@@ -6,7 +6,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default, Clone)]
 #[serde(default)]
@@ -76,7 +76,7 @@ impl From<Vec<Reindeer>> for Contest {
 
 pub async fn task_01(
     extract::Json(payload): extract::Json<Vec<Reindeer>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     info!(?payload);
 
     let result: i32 = payload.iter().map(|rein| rein.strength).sum();
@@ -86,7 +86,7 @@ pub async fn task_01(
 
 pub async fn task_02(
     extract::Json(payload): extract::Json<Vec<Reindeer>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     info!(?payload);
 
     Ok(Json(Contest::from(payload)))

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
@@ -11,26 +12,37 @@ use tracing::info;
 
 use crate::{
     day_13::Order,
-    router::{self, ResponseError},
+    router::{self, Error},
 };
 
 pub async fn task_01_reset(
     State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, ResponseError> {
-    let mut transaction = state.pool.begin().await.unwrap();
+) -> Result<impl IntoResponse, Error> {
+    let mut transaction = state
+        .pool
+        .begin()
+        .await
+        .context("failed to init transaction")?;
 
     sqlx::query!("DROP TABLE IF EXISTS regions")
         .execute(&mut *transaction)
-        .await?;
+        .await
+        .context("Failed to drop regions")?;
     sqlx::query!("DROP TABLE IF EXISTS orders")
         .execute(&mut *transaction)
-        .await?;
+        .await
+        .context("Failed to drop orders")?;
     sqlx::query!("CREATE TABLE regions (id INT PRIMARY KEY, name VARCHAR(50))")
         .execute(&mut *transaction)
-        .await?;
-    sqlx::query!("CREATE TABLE orders (id INT PRIMARY KEY, region_id INT, gift_name VARCHAR(50), quantity INT)").execute(&mut *transaction).await?;
+        .await
+        .context("Failed to create regions")?;
+    sqlx::query!("CREATE TABLE orders (id INT PRIMARY KEY, region_id INT, gift_name VARCHAR(50), quantity INT)").execute(&mut *transaction).await
+        .context("Failed to create orders")?;
 
-    transaction.commit().await?;
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit reset")?;
     info!("Day 18 Reset Called");
     Ok(())
 }
@@ -38,8 +50,12 @@ pub async fn task_01_reset(
 pub async fn task_01_orders(
     State(state): State<Arc<router::State>>,
     Json(orders): Json<Vec<Order>>,
-) -> Result<impl IntoResponse, ResponseError> {
-    let mut transaction = state.pool.begin().await?;
+) -> Result<impl IntoResponse, Error> {
+    let mut transaction = state
+        .pool
+        .begin()
+        .await
+        .context("Failed to init transaction")?;
 
     info!(?orders);
 
@@ -63,10 +79,14 @@ pub async fn task_01_orders(
             order.quantity
         )
         .execute(&mut *transaction)
-        .await?;
+        .await
+        .context("Failed to insert into orders")?;
     }
 
-    transaction.commit().await?;
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit inserts")?;
     Ok(())
 }
 
@@ -79,8 +99,12 @@ pub struct Region {
 pub async fn task_01_regions(
     State(state): State<Arc<router::State>>,
     Json(regions): Json<Vec<Region>>,
-) -> Result<impl IntoResponse, ResponseError> {
-    let mut transaction = state.pool.begin().await?;
+) -> Result<impl IntoResponse, Error> {
+    let mut transaction = state
+        .pool
+        .begin()
+        .await
+        .context("Failed to init transaction")?;
 
     info!(?regions);
 
@@ -98,10 +122,14 @@ pub async fn task_01_regions(
             region.name,
         )
         .execute(&mut *transaction)
-        .await?;
+        .await
+        .context("Failed to insert into regions")?;
     }
 
-    transaction.commit().await?;
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit inserts")?;
     Ok(())
 }
 
@@ -114,7 +142,7 @@ pub struct RegionResult {
 
 pub async fn task_01_total(
     State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     let total = sqlx::query_as!(
         RegionResult,
         r#"
@@ -132,7 +160,8 @@ pub async fn task_01_total(
         "#
     )
     .fetch_all(&state.pool)
-    .await?;
+    .await
+    .context("Failed to select region results")?;
 
     let total = total
         .into_iter()
@@ -152,7 +181,7 @@ pub struct TopResponse {
 pub async fn task_02(
     Path(number): Path<i64>,
     State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     let total = sqlx::query_as!(
         TopResponse,
         r#"
@@ -190,7 +219,8 @@ pub async fn task_02(
         number
     )
     .fetch_all(&state.pool)
-    .await?;
+    .await
+    .context("Failed to select region groups")?;
 
     info!(?total);
 

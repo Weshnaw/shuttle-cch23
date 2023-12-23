@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
@@ -10,7 +11,7 @@ use s2::{cellid::CellID, latlng::LatLng};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::router::{self, ResponseError};
+use crate::router::{self, Error};
 
 fn dms(dec: f64) -> (f64, f64, f64) {
     let d = dec.trunc();
@@ -20,8 +21,8 @@ fn dms(dec: f64) -> (f64, f64, f64) {
     (d, m, s)
 }
 
-pub async fn task_01(Path(binary): Path<String>) -> Result<impl IntoResponse, ResponseError> {
-    let s2 = u64::from_str_radix(&binary, 2)?;
+pub async fn task_01(Path(binary): Path<String>) -> Result<impl IntoResponse, Error> {
+    let s2 = u64::from_str_radix(&binary, 2).context("Failed to parse s2")?;
     let lat_lng: LatLng = CellID(s2).into();
 
     let lat = lat_lng.lat.deg();
@@ -52,8 +53,8 @@ struct Country {
 pub async fn task_02(
     Path(binary): Path<String>,
     State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, ResponseError> {
-    let s2 = u64::from_str_radix(&binary, 2)?;
+) -> Result<impl IntoResponse, Error> {
+    let s2 = u64::from_str_radix(&binary, 2).context("Failed to parse s2")?;
     let lat_lng: LatLng = CellID(s2).into();
 
     let lat = lat_lng.lat.deg();
@@ -61,10 +62,12 @@ pub async fn task_02(
 
     info!("{} {}", lat, lng);
 
-    let details = state.boundaries.ids(LatLon::new(lat, lng)?);
+    let details = state
+        .boundaries
+        .ids(LatLon::new(lat, lng).context("Unable to create LatLon")?);
 
-    let country_code =
-        CountryCode::for_alpha2(details.last().ok_or(ResponseError::CountryNotFound)?)?;
+    let country_code = CountryCode::for_alpha2(details.last().context("No country Found")?)
+        .context("Country code not found")?;
 
     info!(?country_code);
 

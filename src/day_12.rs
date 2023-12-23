@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::SystemTime};
 
+use anyhow::Context;
 use axum::{
     extract::{self, Path, State},
     response::IntoResponse,
@@ -11,34 +12,37 @@ use tracing::info;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::router::{self, ResponseError};
+use crate::router::{self, Error};
 
 pub async fn task_01_save(
     Path(id): Path<String>,
     State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     state
         .persist
-        .save::<SystemTime>(&format!("day-12_{}", id), SystemTime::now())?;
+        .save::<SystemTime>(&format!("day-12_{}", id), SystemTime::now())
+        .context("Failed to persist time")?;
     Ok(())
 }
 
 pub async fn task_01_load(
     Path(id): Path<String>,
     State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     let previous_time = state
         .persist
         .load(&format!("day-12_{}", id))
         .unwrap_or(SystemTime::now());
 
-    let duration = SystemTime::now().duration_since(previous_time)?;
+    let duration = SystemTime::now()
+        .duration_since(previous_time)
+        .context("Failed to calculate duration")?;
     Ok(duration.as_secs().to_string())
 }
 
 pub async fn task_02(
     extract::Json(ulids): extract::Json<Vec<String>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     let result = ulids
         .into_iter()
         .filter_map(|str| Ulid::from_string(&str).ok())
@@ -64,7 +68,7 @@ struct Response {
 pub async fn task_03(
     Path(day): Path<u64>,
     extract::Json(ulids): extract::Json<Vec<String>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     let result = ulids
         .into_iter()
         .filter_map(|str| Ulid::from_string(&str).ok())

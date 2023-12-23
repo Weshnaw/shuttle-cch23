@@ -1,12 +1,13 @@
 use std::collections::{HashMap, HashSet};
 
+use anyhow::Context;
 use axum::response::IntoResponse;
 use itertools::Itertools;
 use tracing::{info, instrument};
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
-pub async fn task_01(body: String) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_01(body: String) -> Result<impl IntoResponse, Error> {
     let number = body
         .lines()
         .filter_map(|number| number.parse::<u64>().ok())
@@ -64,9 +65,13 @@ fn travel(
     Some(result)
 }
 
-pub async fn task_02(body: String) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_02(body: String) -> Result<impl IntoResponse, Error> {
     let mut lines = body.lines();
-    let star_count = lines.next().unwrap().parse::<usize>()?;
+    let star_count = lines
+        .next()
+        .unwrap()
+        .parse::<usize>()
+        .context("Failed to parse star_count")?;
     let stars = (&mut lines)
         .take(star_count)
         .map(|line| {
@@ -75,7 +80,11 @@ pub async fn task_02(body: String) -> Result<impl IntoResponse, ResponseError> {
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
-    let portal_count = lines.next().unwrap().parse::<usize>()?;
+    let portal_count = lines
+        .next()
+        .unwrap()
+        .parse::<usize>()
+        .context("Failed to parse portal_count")?;
     let portals: HashMap<usize, Vec<usize>> = lines
         .take(portal_count)
         .map(|line| {
@@ -97,7 +106,7 @@ pub async fn task_02(body: String) -> Result<impl IntoResponse, ResponseError> {
     );
     let current_portal = star_count - 1;
     let traveled =
-        travel(current_portal, HashSet::new(), &portals).ok_or(ResponseError::UnableToPortal)?;
+        travel(current_portal, HashSet::new(), &portals).context("Unable to traverse")?;
 
     info!(?traveled);
 

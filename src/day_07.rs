@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
+use anyhow::Context;
 use axum::{http::HeaderMap, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Default)]
 #[serde(default)]
@@ -22,35 +23,40 @@ struct BakeOutput {
 const COOKIE_HEADER: &str = "Cookie";
 const RECIPE: usize = "recipe=".len();
 
-pub async fn task_01(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_01(headers: HeaderMap) -> Result<impl IntoResponse, Error> {
     let cookie = headers
         .get(COOKIE_HEADER)
-        .ok_or(ResponseError::HeadingNotFound(COOKIE_HEADER.to_string()))?
-        .to_str()?;
+        .context("Heading not found")?
+        .to_str()
+        .context("Heading not string")?;
     info!(?cookie);
     let recipe = String::from_utf8(
         rbase64::decode(&cookie[RECIPE..])
-            .map_err(|_| ResponseError::Base64DecodeError(cookie.to_string()))?,
-    )?;
+            .with_context(|| format!("Unable to decode cookie: {}", cookie))?,
+    )
+    .context("Unable to convert decoded value to string")?;
 
     info!(?recipe);
     Ok(recipe)
 }
 
-pub async fn task_02(headers: HeaderMap) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_02(headers: HeaderMap) -> Result<impl IntoResponse, Error> {
     let cookie = headers
         .get(COOKIE_HEADER)
-        .ok_or(ResponseError::HeadingNotFound(COOKIE_HEADER.to_string()))?
-        .to_str()?;
+        .context("Heading not found")?
+        .to_str()
+        .context("Heading not string")?;
     debug!(?cookie);
     let base64 = &cookie[RECIPE..];
     debug!(?base64);
     let decoded = &String::from_utf8(
-        rbase64::decode(base64)
-            .map_err(|_| ResponseError::Base64DecodeError(cookie.to_string()))?,
-    )?;
+        rbase64::decode(base64).with_context(|| format!("Unable to decode cookie: {}", cookie))?,
+    )
+    .context("Unable to convert decoded value to string")?;
+
     debug!(?decoded);
-    let recipe: BakeInput = serde_json::from_str(decoded)?;
+    let recipe: BakeInput =
+        serde_json::from_str(decoded).context("Unable to parse decoded to json")?;
     info!(?decoded);
 
     let max_cookies = recipe

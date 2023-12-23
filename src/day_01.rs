@@ -1,9 +1,9 @@
 use axum::{extract::Path, response::IntoResponse};
 use tracing::info;
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
-pub async fn task_00(Path(x): Path<String>) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_00(Path(x): Path<String>) -> Result<impl IntoResponse, Error> {
     info!(?x);
 
     let sum = x

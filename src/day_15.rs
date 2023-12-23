@@ -1,9 +1,10 @@
+use anyhow::Context;
 use axum::{http::status::StatusCode, response::IntoResponse, Json};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
@@ -70,12 +71,15 @@ impl IntoResponse for NoN {
     }
 }
 
-pub async fn task_01(Json(input): Json<Input>) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_01(Json(input): Json<Input>) -> Result<impl IntoResponse, Error> {
     let input = input.input.to_lowercase();
 
     info!(?input);
 
-    let bad = Regex::new(r"(ab|cd|pq|xy)")?.find(&input).is_some();
+    let bad = Regex::new(r"(ab|cd|pq|xy)")
+        .context("Failed to create bad pair regex")?
+        .find(&input)
+        .is_some();
     if bad {
         info!("not vowels");
         return Ok(NoN::Naughty);
@@ -90,7 +94,10 @@ pub async fn task_01(Json(input): Json<Input>) -> Result<impl IntoResponse, Resp
         return Ok(NoN::Naughty);
     }
 
-    let vowels = Regex::new(r"[aeiouy]")?.find_iter(&input).count();
+    let vowels = Regex::new(r"[aeiouy]")
+        .context("Failed to create vowel regex")?
+        .find_iter(&input)
+        .count();
     if vowels < 3 {
         info!("not vowels");
         return Ok(NoN::Naughty);
@@ -99,7 +106,7 @@ pub async fn task_01(Json(input): Json<Input>) -> Result<impl IntoResponse, Resp
     Ok(NoN::Nice)
 }
 
-pub async fn task_02(Json(input): Json<Input>) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_02(Json(input): Json<Input>) -> Result<impl IntoResponse, Error> {
     let input = input.input;
     info!(?input);
 
@@ -107,17 +114,26 @@ pub async fn task_02(Json(input): Json<Input>) -> Result<impl IntoResponse, Resp
         return Ok(NoN::ReasonedNaughty("8 chars".to_string()));
     }
 
-    let has_upper = Regex::new(r"[A-Z]")?.find(&input).is_some();
+    let has_upper = Regex::new(r"[A-Z]")
+        .context("Failed to create uppercase regex")?
+        .find(&input)
+        .is_some();
     if !has_upper {
         return Ok(NoN::ReasonedNaughty("more types of chars".to_string()));
     }
 
-    let has_lower = Regex::new(r"[a-z]")?.find(&input).is_some();
+    let has_lower = Regex::new(r"[a-z]")
+        .context("Failed to create lowercase regex")?
+        .find(&input)
+        .is_some();
     if !has_lower {
         return Ok(NoN::ReasonedNaughty("more types of chars".to_string()));
     }
 
-    let digits = Regex::new(r"[0-9]")?.find_iter(&input).count();
+    let digits = Regex::new(r"[0-9]")
+        .context("Failed to create digits regex")?
+        .find_iter(&input)
+        .count();
     if digits == 0 {
         return Ok(NoN::ReasonedNaughty("more types of chars".to_string()));
     }
@@ -126,7 +142,8 @@ pub async fn task_02(Json(input): Json<Input>) -> Result<impl IntoResponse, Resp
         return Ok(NoN::ReasonedNaughty("55555".to_string()));
     }
 
-    let sum: i32 = Regex::new(r"[0-9]+")?
+    let sum: i32 = Regex::new(r"[0-9]+")
+        .context("Failed to create sums regex")?
         .find_iter(&input)
         .map(|ma| {
             let ma = ma.as_str();
@@ -139,10 +156,22 @@ pub async fn task_02(Json(input): Json<Input>) -> Result<impl IntoResponse, Resp
         return Ok(NoN::ReasonedNaughty("math is hard".to_string()));
     }
 
-    let joy = Regex::new(r"j.*o.*y")?.find(&input).is_some();
-    let not_joy_y = Regex::new(r"y.*j")?.find(&input).is_some();
-    let not_joy_o = Regex::new(r"o.*j")?.find(&input).is_some();
-    let not_joy_yo = Regex::new(r"y.*o")?.find(&input).is_some();
+    let joy = Regex::new(r"j.*o.*y")
+        .context("Failed to create joy regex")?
+        .find(&input)
+        .is_some();
+    let not_joy_y = Regex::new(r"y.*j")
+        .context("Failed to create not yj regex")?
+        .find(&input)
+        .is_some();
+    let not_joy_o = Regex::new(r"o.*j")
+        .context("Failed to create not oj regex")?
+        .find(&input)
+        .is_some();
+    let not_joy_yo = Regex::new(r"y.*o")
+        .context("Failed to create not yo regex")?
+        .find(&input)
+        .is_some();
     if !joy || not_joy_y || not_joy_o || not_joy_yo {
         return Ok(NoN::SpecialStatusNaughty(
             StatusCode::NOT_ACCEPTABLE,
@@ -161,7 +190,10 @@ pub async fn task_02(Json(input): Json<Input>) -> Result<impl IntoResponse, Resp
         ));
     }
 
-    let r7 = Regex::new(r"[\u2980-\u2BFF]")?.find(&input).is_some();
+    let r7 = Regex::new(r"[\u2980-\u2BFF]")
+        .context("Failed to create r7 regex")?
+        .find(&input)
+        .is_some();
     if !r7 {
         return Ok(NoN::SpecialStatusNaughty(
             StatusCode::RANGE_NOT_SATISFIABLE,
@@ -169,7 +201,8 @@ pub async fn task_02(Json(input): Json<Input>) -> Result<impl IntoResponse, Resp
         ));
     }
 
-    let r8 = Regex::new(r"\p{Emoji_Presentation}")?
+    let r8 = Regex::new(r"\p{Emoji_Presentation}")
+        .context("Failed to create r8 regex")?
         .find(&input)
         .is_some();
     if !r8 {

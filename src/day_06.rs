@@ -2,7 +2,7 @@ use axum::{response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 struct ElfCount {
@@ -14,7 +14,7 @@ struct ElfCount {
 }
 
 const ELF_ON_A_SHELF: &str = "elf on a shelf";
-pub async fn task_00(body: String) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_00(body: String) -> Result<impl IntoResponse, Error> {
     // let body = body.to_lowercase();
     info!(?body);
     let elf = body.matches("elf").count();

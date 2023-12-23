@@ -17,7 +17,7 @@ use tokio::sync::{
 };
 use tracing::{debug, info, warn};
 
-use crate::router::{self, Chat, ResponseError};
+use crate::router::{self, Chat, Error};
 
 pub async fn handle_socket(mut socket: WebSocket) {
     let mut playing = false;
@@ -46,13 +46,13 @@ pub async fn handle_socket(mut socket: WebSocket) {
     }
 }
 
-pub async fn task_01(ws: WebSocketUpgrade) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_01(ws: WebSocketUpgrade) -> Result<impl IntoResponse, Error> {
     Ok(ws.on_upgrade(handle_socket))
 }
 
 pub async fn task_02_reset(
     State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     let mut views = state.views.write().await;
     *views = 0;
     Ok(())
@@ -60,7 +60,7 @@ pub async fn task_02_reset(
 
 pub async fn task_02_views(
     State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     let views = state.views.read().await;
     info!(?views);
     Ok(views.to_string())
@@ -130,7 +130,7 @@ pub async fn task_02_room(
     Path((number, name)): Path<(usize, String)>,
     State(state): State<Arc<router::State>>,
     ws: WebSocketUpgrade,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse, Error> {
     debug!(?name);
     let mut rooms = state.rooms.write().await;
     let room = if let Some(tx) = rooms.get(&number) {

@@ -1,13 +1,11 @@
 use axum::response::IntoResponse;
-use tracing::debug;
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
-pub async fn task_01() -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_01() -> Result<impl IntoResponse, Error> {
     Ok("Hello, world!")
 }
 
-pub async fn task_02() -> ResponseError {
-    debug!("ChallengeNeg1 Error always sent at this path");
-    ResponseError::ChallengeNeg1
+pub async fn task_02() -> Error {
+    anyhow::Error::msg("Challenge -1 Task 2").into()
 }

@@ -1,24 +1,15 @@
-use std::{
-    collections::HashMap, num::ParseIntError, string::FromUtf8Error, sync::Arc,
-    time::SystemTimeError,
-};
-
 use axum::{
-    extract::multipart::MultipartError,
-    http::{header::ToStrError as AxumToStrError, StatusCode},
+    http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     Router,
 };
 use country_boundaries::{CountryBoundaries, BOUNDARIES_ODBL_360X180};
-use derive_more::{Display, Error, From};
-use gix::{discover, revision::spec::parse};
-use image::ImageError;
-use isocountry::CountryCodeParseErr;
-use reqwest::header::ToStrError;
+use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
-use shuttle_persist::{PersistError, PersistInstance};
+use shuttle_persist::PersistInstance;
 use sqlx::PgPool;
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{broadcast::Sender, RwLock};
 use tower_http::services::ServeDir;
 use tracing::warn;
@@ -99,48 +90,12 @@ pub fn router(persist: PersistInstance, pool: PgPool) -> Router {
         .with_state(state)
 }
 
-#[derive(Error, Display, Debug, From)]
-pub enum ResponseError {
-    ChallengeNeg1,
-    SqlError(sqlx::Error),
-    PersistError(PersistError),
-    SystemTimeError(SystemTimeError),
-    MultiPartError(MultipartError),
-    ImageError(ImageError),
-    IoError(std::io::Error),
-    ReqwestError(reqwest::Error),
-    JsonError(serde_json::Error),
-    Utf8StringError(FromUtf8Error),
-    #[from(ignore)]
-    Base64DecodeError(#[error(not(source))] String),
-    #[from(ignore)]
-    HeadingNotFound(#[error(not(source))] String),
-    #[from(ignore)]
-    MaxNotFound(#[error(not(source))] String),
-    ToStrError(ToStrError),
-    RegexError(regex::Error),
-    AxumToStrError(AxumToStrError),
-    BadRepository,
-    CountryNotFound,
-    GitDiscoverError(discover::Error),
-    GitSingleParseError(parse::single::Error),
-    GitFindError(gix::object::find::existing::Error),
-    GitTryIntoError(gix::object::try_into::Error),
-    GitWalkError(gix::revision::walk::Error),
-    ParseIntError(ParseIntError),
-    BoundariesError(country_boundaries::Error),
-    CountryCodeError(CountryCodeParseErr),
-    UnableToPortal,
-}
+#[derive(Display, Debug, From)]
+pub struct Error(anyhow::Error);
 
-impl IntoResponse for ResponseError {
+impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         warn!("{:?} Error occured", self);
-        match self {
-            Self::ChallengeNeg1 => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "Challenge D-1 Task 2").into_response()
-            }
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, "UNKNOWN ERROR").into_response(),
-        }
+        (StatusCode::INTERNAL_SERVER_ERROR, self.0.to_string()).into_response()
     }
 }

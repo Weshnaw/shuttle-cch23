@@ -2,14 +2,14 @@ use axum::{response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::router::ResponseError;
+use crate::router::Error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Content {
     content: String,
 }
 
-pub async fn task_01(Json(content): Json<Content>) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_01(Json(content): Json<Content>) -> Result<impl IntoResponse, Error> {
     info!(?content);
     Ok(format!(
         "\
@@ -25,7 +25,7 @@ pub async fn task_01(Json(content): Json<Content>) -> Result<impl IntoResponse, 
     ))
 }
 
-pub async fn task_02(Json(content): Json<Content>) -> Result<impl IntoResponse, ResponseError> {
+pub async fn task_02(Json(content): Json<Content>) -> Result<impl IntoResponse, Error> {
     let content = content.content;
     let content = html_escape::encode_text(&content);
     let content = content.replace('"', "&quot;");
