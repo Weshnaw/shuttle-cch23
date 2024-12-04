@@ -2,7 +2,7 @@ use std::fs::remove_dir_all;
 
 use anyhow::Context;
 use axum::{body::Bytes, response::IntoResponse};
-use gix::traverse::tree;
+use gix::{revision::walk::Sorting, traverse::{commit::simple::CommitTimeOrder, tree}};
 use tar::Archive;
 use tracing::{debug, info};
 
@@ -47,7 +47,7 @@ pub async fn task_02(data: Bytes) -> Result<impl IntoResponse, Error> {
 
     let result = repo
         .rev_walk([commit.id])
-        .sorting(gix::traverse::commit::Sorting::ByCommitTimeNewestFirst)
+        .sorting(Sorting::ByCommitTime(CommitTimeOrder::NewestFirst))
         .all()
         .context("Failed to rev_walk")?
         .find_map(|commit| {

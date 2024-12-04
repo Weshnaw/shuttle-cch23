@@ -1,25 +1,40 @@
-use std::sync::Arc;
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    u64,
+};
 
 use axum::{
     extract::{
-        ws::{Message, WebSocket},
-        Path, State, WebSocketUpgrade,
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        Path, State,
     },
     response::IntoResponse,
+    routing::{get, post},
+    Router,
 };
 use futures::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
 };
+use serde::{Deserialize, Serialize};
 use tokio::sync::{
-    broadcast::{self, Sender},
-    RwLock,
+    broadcast::{self, Receiver, Sender},
+    Mutex,
 };
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
-use crate::router::{self, Chat, Error};
+use crate::router::Error;
 
-pub async fn handle_socket(mut socket: WebSocket) {
+async fn task_01_ping(ws: WebSocketUpgrade) -> Result<impl IntoResponse, Error> {
+    info!("Created ping socket");
+    Ok(ws.on_upgrade(handle_socket))
+}
+
+async fn handle_socket(mut socket: WebSocket) {
     let mut playing = false;
     while let Some(msg) = socket.recv().await {
         let msg = if let Ok(msg) = msg {
@@ -46,100 +61,123 @@ pub async fn handle_socket(mut socket: WebSocket) {
     }
 }
 
-pub async fn task_01(ws: WebSocketUpgrade) -> Result<impl IntoResponse, Error> {
-    Ok(ws.on_upgrade(handle_socket))
+#[derive(Clone)]
+struct BirdState {
+    views: Arc<AtomicU64>,
+    rooms: Arc<Mutex<HashMap<usize, Sender<ChatTx>>>>,
 }
 
-pub async fn task_02_reset(
-    State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, Error> {
-    let mut views = state.views.write().await;
-    *views = 0;
+async fn task_02_reset(State(state): State<BirdState>) -> Result<impl IntoResponse, Error> {
+    state.views.store(0, Ordering::SeqCst);
+    info!("Reset views");
     Ok(())
 }
 
-pub async fn task_02_views(
-    State(state): State<Arc<router::State>>,
-) -> Result<impl IntoResponse, Error> {
-    let views = state.views.read().await;
+async fn task_02_views(State(state): State<BirdState>) -> Result<impl IntoResponse, Error> {
+    let views = state.views.load(Ordering::Relaxed);
     info!(?views);
     Ok(views.to_string())
 }
 
-async fn task_02_handler(
-    socket: WebSocket,
-    tx: Arc<Sender<Chat>>,
-    name: String,
-    views: Arc<RwLock<usize>>,
-) {
-    let (sender, receiver) = socket.split();
+const BROADCAST_CAPACITY: usize = 1024;
+async fn task_02_room(
+    Path((number, name)): Path<(usize, Arc<str>)>,
+    State(state): State<BirdState>,
+    ws: WebSocketUpgrade,
+) -> Result<impl IntoResponse, Error> {
+    info!(?name, ?number);
 
-    tokio::spawn(write(sender, tx.clone(), views));
-    tokio::spawn(read(receiver, tx, name));
-}
+    let (tx, rx) = {
+        let mut rooms = state.rooms.lock().await;
 
-const RETRIES: usize = 5;
-
-async fn write(
-    mut sender: SplitSink<WebSocket, Message>,
-    tx: Arc<Sender<Chat>>,
-    views: Arc<RwLock<usize>>,
-) {
-    let mut rx = tx.subscribe();
-    while let Ok(msg) = rx.recv().await {
-        for attempt in 1..=RETRIES {
-            if let Err(e) = sender
-                .send(Message::Text(serde_json::to_string(&msg).unwrap()))
-                .await
-            {
-                debug!(
-                    "Failed to send message to websocket attempt {}: {:?}",
-                    attempt, e
-                );
-            } else {
-                let mut views = views.write().await;
-                *views += 1;
-                break;
+        match rooms.entry(number) {
+            Entry::Occupied(o) => {
+                let tx = o.into_mut();
+                (tx.clone(), tx.subscribe())
+            }
+            Entry::Vacant(v) => {
+                let (tx, rx) = broadcast::channel(BROADCAST_CAPACITY);
+                v.insert(tx.clone());
+                (tx, rx)
             }
         }
-    }
+    };
+
+    Ok(ws.on_upgrade(move |ws| room_handler(ws, tx, rx, name, state.views.clone())))
 }
 
-async fn read(mut reciever: SplitStream<WebSocket>, tx: Arc<Sender<Chat>>, name: String) {
-    while let Some(Ok(Message::Text(text))) = reciever.next().await {
-        if let Ok(mut chat) = serde_json::from_str::<Chat>(&text) {
+async fn room_handler(
+    ws: WebSocket,
+    tx: Sender<ChatTx>,
+    rx: Receiver<ChatTx>,
+    name: Arc<str>,
+    views: Arc<AtomicU64>,
+) {
+    let (sender, receiver) = ws.split();
+
+    tokio::spawn(tx_handler(receiver, tx, name));
+    tokio::spawn(rx_handler(sender, rx, views));
+}
+
+#[derive(Deserialize)]
+struct ChatRx {
+    message: Arc<str>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+struct ChatTx {
+    user: Arc<str>,
+    message: Arc<str>,
+}
+
+async fn tx_handler(mut ws_receiver: SplitStream<WebSocket>, tx: Sender<ChatTx>, name: Arc<str>) {
+    while let Some(Ok(Message::Text(text))) = ws_receiver.next().await {
+        if let Ok(chat) = serde_json::from_str::<ChatRx>(&text) {
             if chat.message.len() <= 128 {
-                chat.user = Some(name.clone());
-                debug!(?chat);
-                for attempt in 1..=RETRIES {
-                    if let Err(e) = tx.send(chat.clone()) {
-                        warn!(
-                            "Failed to transmit message to sender attempt {}: {:?}",
-                            attempt, e
-                        );
-                    } else {
-                        break;
-                    }
+                let tx_message = ChatTx {
+                    user: name.clone(),
+                    message: chat.message.clone(),
+                };
+                info!(?tx_message);
+
+                if let Err(e) = tx.send(tx_message) {
+                    warn!("Failed to transmit message: {:?}", e);
                 }
             }
         }
     }
+
+    // cleanup socket somehow
+}
+async fn rx_handler(
+    mut ws_sender: SplitSink<WebSocket, Message>,
+    mut rx: Receiver<ChatTx>,
+    views: Arc<AtomicU64>,
+) {
+    while let Ok(msg) = rx.recv().await {
+        if let Err(e) = ws_sender
+            .send(Message::Text(serde_json::to_string(&msg).unwrap()))
+            .await
+        {
+            warn!("Failed to send message to ws: {:?}", e);
+            break;
+        } else {
+            views.fetch_add(1, Ordering::SeqCst);
+        }
+    }
 }
 
-pub async fn task_02_room(
-    Path((number, name)): Path<(usize, String)>,
-    State(state): State<Arc<router::State>>,
-    ws: WebSocketUpgrade,
-) -> Result<impl IntoResponse, Error> {
-    debug!(?name);
-    let mut rooms = state.rooms.write().await;
-    let room = if let Some(tx) = rooms.get(&number) {
-        tx.clone()
-    } else {
-        let (tx, _rx) = broadcast::channel(100);
-        rooms.insert(number, Arc::new(tx));
-        rooms.get(&number).unwrap().clone()
+pub fn router() -> Router {
+    let state = BirdState {
+        views: Arc::new(AtomicU64::new(0)),
+        rooms: Arc::new(Mutex::new(HashMap::new())),
     };
-    drop(rooms);
-    Ok(ws.on_upgrade(move |ws| task_02_handler(ws, room, name, state.views.clone())))
+
+    Router::new()
+        .route("/ws/ping", get(task_01_ping))
+        .route("/reset", post(task_02_reset))
+        .route("/views", get(task_02_views))
+        .route("/ws/room/:number/user/:name", get(task_02_room))
+        .with_state(state)
 }
+
